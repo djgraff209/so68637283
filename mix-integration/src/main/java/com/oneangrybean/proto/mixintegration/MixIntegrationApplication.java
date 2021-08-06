@@ -7,16 +7,14 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.integration.core.MessagingTemplate;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.webflux.dsl.WebFlux;
 import org.springframework.messaging.Message;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-import org.springframework.web.reactive.function.server.ServerResponse;
 
 import reactor.core.publisher.Mono;
 
@@ -63,15 +61,18 @@ public class MixIntegrationApplication {
                             ec -> ec.customizeMonoReply(
                                 (Message<?> message, Mono<?> mono) -> 
                                     mono.onErrorResume(
-                                        WebClientResponseException.NotFound.class,
-                                        (ex1) -> 
-                                            Mono.just(defaultPayload)
-                                                .flatMap(s ->
-                                                    ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(s)
-                                                )
+                                        WebClientResponseException.class,
+                                        ex1 -> {
+                                            Mono<?> exReturn = mono;
+                                            if( ex1.getStatusCode() == HttpStatus.NOT_FOUND ) {
+                                                exReturn = Mono.just(defaultPayload);
+                                            }
+                                            return (Mono)exReturn;
+                                        }
                                     )
                             )
                         )
+                        .logAndReply()
                     )
                     .headerExpression("mix-entry-id", "#jsonPath(payload, '$.id')")
             )
