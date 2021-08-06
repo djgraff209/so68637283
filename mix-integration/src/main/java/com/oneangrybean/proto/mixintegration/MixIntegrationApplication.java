@@ -48,7 +48,7 @@ public class MixIntegrationApplication {
                                             headers -> headers.setBasicAuth("api", "s3cr3t")
                                         )
                                         .build();
-        final String defaultPayload = "{ \"id\": -1, \"name\": null `}";
+        final String defaultPayload = "{ \"id\": -1, \"name\": null }";
         return f->
                 f.enrich(
                     e -> e.requestSubFlow(
@@ -62,13 +62,10 @@ public class MixIntegrationApplication {
                                 (Message<?> message, Mono<?> mono) -> 
                                     mono.onErrorResume(
                                         WebClientResponseException.class,
-                                        ex1 -> {
-                                            Mono<?> exReturn = mono;
-                                            if( ex1.getStatusCode() == HttpStatus.NOT_FOUND ) {
-                                                exReturn = Mono.just(defaultPayload);
-                                            }
-                                            return (Mono)exReturn;
-                                        }
+                                        ex1 -> Mono.just(ex1)
+                                                    .filter(ex -> ex.getStatusCode() == HttpStatus.NOT_FOUND)
+                                                    .map(ex -> defaultPayload)
+                                                    .switchIfEmpty((Mono)mono)
                                     )
                             )
                         )
