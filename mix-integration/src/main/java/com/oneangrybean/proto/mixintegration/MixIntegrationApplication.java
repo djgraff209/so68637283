@@ -1,5 +1,8 @@
 package com.oneangrybean.proto.mixintegration;
 
+import java.io.FileWriter;
+import java.io.PrintWriter;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -145,6 +148,23 @@ public class MixIntegrationApplication {
     }
 
     @Bean
+    public CommandLineRunner runner1() {
+        return (args) -> {
+            final WebClient webClient = 
+                    WebClient.builder()
+                            .build();
+
+            final String result = webClient.get()
+                        .uri("http://localhost:8080/mix-entry/name/{mixEntryName}", "Two")
+                        .headers(headers -> headers.setBasicAuth("api", "s3cr3t"))
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .block();
+            System.out.println(result);
+        };
+    }
+
+    // @Bean
     public CommandLineRunner runner(MessagingTemplate messagingTemplate) {
         return (args) -> {
             Message<String> sourceMessage = MessageBuilder.withPayload("Two")
@@ -158,6 +178,10 @@ public class MixIntegrationApplication {
                                     resultMessage.getHeaders().get("mix-entry-id", Integer.class));
             } catch(MessageHandlingException ex) {
                 System.out.println("ERROR - Trapped MessageHandlingException");
+                try(FileWriter fw = new FileWriter("notfound-impl.txt");
+                    PrintWriter pw = new PrintWriter(fw, true)) {
+                    ex.printStackTrace(pw);
+                }
             }
             System.out.println();
 
@@ -169,6 +193,10 @@ public class MixIntegrationApplication {
                                     resultMessage.getHeaders().get("mix-entry-id", Integer.class));
             } catch(MessageHandlingException ex) {
                 System.out.println("ERROR - Trapped MessageHandlingException");
+                try(FileWriter fw = new FileWriter("raw-impl.txt");
+                    PrintWriter pw = new PrintWriter(fw, true)) {
+                    ex.printStackTrace(pw);
+                }
             }
             System.out.println();
         };
