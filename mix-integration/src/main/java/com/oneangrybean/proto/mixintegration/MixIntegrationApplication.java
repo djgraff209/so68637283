@@ -41,13 +41,13 @@ public class MixIntegrationApplication {
     private WebClient.Builder webClientBuilder;
 
     @Bean
-    public IntegrationFlow getMixEntryFlow(final RestTemplate restTemplate) {
+    public IntegrationFlow getMixEntryFlow(final RestTemplate restTemplate, final NotFoundRequestHandlerAdvice notFoundRequestHandlerAdvice) {
         return f->f.handle(
            Http.outboundGateway("http://localhost:8080/mix-entry/name/{mixEntryName}", restTemplate)
                .httpMethod(HttpMethod.GET)
                .uriVariable("mixEntryName", "payload")
                .expectedResponseType(String.class),
-           e -> e.advice(new NotFoundRequestHandlerAdvice())
+           e -> e.advice(notFoundRequestHandlerAdvice)
         );
     }
 

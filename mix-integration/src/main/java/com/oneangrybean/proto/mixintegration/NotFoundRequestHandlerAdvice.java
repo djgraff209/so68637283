@@ -3,8 +3,10 @@ package com.oneangrybean.proto.mixintegration;
 import org.springframework.integration.handler.advice.AbstractRequestHandlerAdvice;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHandlingException;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 
+@Component
 public class NotFoundRequestHandlerAdvice extends AbstractRequestHandlerAdvice {
     @Override
     protected Object doInvoke(ExecutionCallback callback, Object target, Message<?> message) {
