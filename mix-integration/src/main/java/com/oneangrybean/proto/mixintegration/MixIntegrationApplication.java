@@ -1,5 +1,8 @@
 package com.oneangrybean.proto.mixintegration;
 
+import java.io.FileWriter;
+import java.io.PrintWriter;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -77,12 +80,10 @@ public class MixIntegrationApplication {
                             .expectedResponseType(String.class)
                             ,
                             ec -> ec.customizeMonoReply(
-                                (Message<?> message, Mono<?> mono) -> 
+                                (message, mono) -> 
                                     mono.onErrorResume(
                                         WebClientResponseException.NotFound.class,
-                                        ex1 -> Mono.just(ex1)
-                                                    .map(ex -> defaultPayload)
-                                                    .switchIfEmpty((Mono)mono)
+                                        ex1 -> Mono.just(defaultPayload)
                                     )
                             )
                         )
@@ -122,13 +123,13 @@ public class MixIntegrationApplication {
                             .expectedResponseType(String.class)
                             ,
                             ec -> ec.customizeMonoReply(
-                                (Message<?> message, Mono<?> mono) -> 
+                                (message, mono) -> 
                                     mono.onErrorResume(
                                         WebClientResponseException.class,
                                         ex1 -> Mono.just(ex1)
                                                     .filter(ex -> ex.getStatusCode() == HttpStatus.NOT_FOUND)
-                                                    .map(ex -> defaultPayload)
-                                                    .switchIfEmpty((Mono)mono)
+                                                    .<Object>map(ex -> defaultPayload)
+                                                    .switchIfEmpty(mono)
                                     )
                             )
                         )
@@ -158,6 +159,10 @@ public class MixIntegrationApplication {
                                     resultMessage.getHeaders().get("mix-entry-id", Integer.class));
             } catch(MessageHandlingException ex) {
                 System.out.println("ERROR - Trapped MessageHandlingException");
+                try(FileWriter fw = new FileWriter("notfound-impl.txt");
+                    PrintWriter pw = new PrintWriter(fw, true)) {
+                    ex.printStackTrace(pw);
+                }
             }
             System.out.println();
 
@@ -169,6 +174,10 @@ public class MixIntegrationApplication {
                                     resultMessage.getHeaders().get("mix-entry-id", Integer.class));
             } catch(MessageHandlingException ex) {
                 System.out.println("ERROR - Trapped MessageHandlingException");
+                try(FileWriter fw = new FileWriter("raw-impl.txt");
+                    PrintWriter pw = new PrintWriter(fw, true)) {
+                    ex.printStackTrace(pw);
+                }
             }
             System.out.println();
         };
